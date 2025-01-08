@@ -30,31 +30,29 @@ def calculate_food_drink_revenue(tickets_sold, average_food_spending=20):
     return tickets_sold * average_food_spending
 
 def calculate_ppv_purchases(event_rating, ad_spending, ppv_length_hours):
-    """Refined PPV purchases model with diminishing returns for length."""
+    """Refined PPV purchases model with scaling for event length."""
     intercept = 157501.78
     coef_event_rating = 1420.70
     coef_ad_spending = -0.90
-    # Non-linear scaling for length (diminishing returns)
+    # Non-linear scaling for length (e.g., diminishing returns)
     length_multiplier = 1 + (0.2 * ppv_length_hours) - (0.05 * ppv_length_hours**2)
     base_purchases = max(0, coef_event_rating * event_rating + coef_ad_spending * ad_spending + intercept)
     return base_purchases * max(0, length_multiplier)  # Ensure multiplier is non-negative
 
-def calculate_ppv_revenue(ppv_purchases, ppv_length_hours):
-    """Calculate PPV revenue after costs."""
-    gross_ppv_revenue = ppv_purchases * 35  # PPV price
-    network_fee = gross_ppv_revenue * 0.5  # 50% network cut
-    fixed_costs = ppv_length_hours * 300_000  # Fixed hourly costs
-    net_ppv_revenue = gross_ppv_revenue - network_fee - fixed_costs
-    return max(0, net_ppv_revenue)  # Ensure revenue is non-negative
+def calculate_ppv_revenue(ppv_purchases):
+    """Calculate gross PPV revenue."""
+    return ppv_purchases * 35  # $35 per PPV purchase
 
 # Streamlit app
-st.title("Event Spending Optimization Tool (With Refined PPV)")
+st.title("Event Spending Optimization Tool (With Revenue and Cost Breakdown)")
 
 # Inputs
 st.header("Input Event Details")
 event_rating = st.slider("Event Rating (0-1000)", min_value=0, max_value=1000, value=500)
 arena_size = st.number_input("Arena Size (Number of Seats)", min_value=0, value=20000)
 ppv_length_hours = st.selectbox("PPV Length (Hours)", [0, 1, 2, 3], index=3)
+commentators_cost = st.selectbox("Commentator Level (Cost)", [10_000, 50_000, 100_000], index=0)
+cameras_cost = st.slider("Number of Cameras (Cost)", min_value=1, max_value=10, value=1) * 10_000
 ad_budget = st.number_input("Ad Budget (Optional)", min_value=0, value=0)
 prod_budget = st.number_input("Production Budget (Optional)", min_value=0, value=0)
 
@@ -73,32 +71,36 @@ if ppv_length_hours == 0:
     ppv_revenue = 0
 else:
     ppv_purchases = calculate_ppv_purchases(event_rating, recommended_ad_spending, ppv_length_hours)
-    ppv_revenue = calculate_ppv_revenue(ppv_purchases, ppv_length_hours)
+    ppv_revenue = calculate_ppv_revenue(ppv_purchases)
 
-# Total Revenue
+# Total Revenue and Costs
 total_revenue = ticket_revenue + merchandising_revenue + food_drink_revenue + ppv_revenue
-profit = total_revenue - (recommended_ad_spending + recommended_prod_spending)
+total_costs = recommended_ad_spending + recommended_prod_spending + commentators_cost + cameras_cost
+profit = total_revenue - total_costs
 
 # Outputs
-st.header("Recommended Spending")
-st.write(f"**Recommended Ad Spending:** ${recommended_ad_spending:,.2f}")
-st.write(f"**Recommended Production Spending:** ${recommended_prod_spending:,.2f}")
-
 st.header("Revenue Breakdown")
 st.write(f"**Tickets Sold:** {tickets_sold:,.0f}")
 st.write(f"**Ticket Revenue:** ${ticket_revenue:,.2f}")
 st.write(f"**Merchandising Revenue:** ${merchandising_revenue:,.2f}")
 st.write(f"**Food & Drink Revenue:** ${food_drink_revenue:,.2f}")
 st.write(f"**PPV Purchases:** {ppv_purchases:,.0f}")
-st.write(f"**PPV Revenue:** ${ppv_revenue:,.2f}")
+st.write(f"**PPV Revenue (Gross):** ${ppv_revenue:,.2f}")
 st.write(f"**Total Revenue:** ${total_revenue:,.2f}")
+
+st.header("Cost Breakdown")
+st.write(f"**Ad Spending:** ${recommended_ad_spending:,.2f}")
+st.write(f"**Production Spending:** ${recommended_prod_spending:,.2f}")
+st.write(f"**Commentators Cost:** ${commentators_cost:,.2f}")
+st.write(f"**Cameras Cost:** ${cameras_cost:,.2f}")
+st.write(f"**Total Costs:** ${total_costs:,.2f}")
 
 st.header("Profit Calculation")
 st.write(f"**Profit:** ${profit:,.2f}")
 
 # Visualization
-st.header("Revenue and Spending Breakdown")
+st.header("Revenue and Cost Breakdown")
 st.bar_chart({
     "Revenue Components": [ticket_revenue, merchandising_revenue, food_drink_revenue, ppv_revenue],
-    "Spending": [recommended_ad_spending, recommended_prod_spending]
-}, x=["Tickets", "Merch", "Food & Drink", "PPV", "Ad Spending", "Production Spending"])
+    "Cost Components": [recommended_ad_spending, recommended_prod_spending, commentators_cost, cameras_cost]
+}, x=["Tickets", "Merch", "Food & Drink", "PPV", "Ad Spending", "Production Spending", "Commentators", "Cameras"])
