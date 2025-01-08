@@ -38,10 +38,15 @@ def calculate_ppv_purchases(event_rating, ad_spending):
 
 def calculate_ppv_revenue(ppv_purchases, ppv_length_hours):
     """Calculate PPV revenue after costs."""
-    gross_ppv_revenue = ppv_purchases * 35
+    # Fixed cost per hour of PPV
     fixed_costs = ppv_length_hours * 300_000
-    net_ppv_revenue = (gross_ppv_revenue * 0.5) - fixed_costs
-    return net_ppv_revenue
+    # Gross PPV revenue
+    gross_ppv_revenue = ppv_purchases * 35
+    # Network fee (50% of gross revenue)
+    network_fee = gross_ppv_revenue * 0.5
+    # Net PPV revenue
+    net_ppv_revenue = gross_ppv_revenue - network_fee - fixed_costs
+    return max(0, net_ppv_revenue)  # Ensure revenue is not negative
 
 # Streamlit app
 st.title("Event Spending Optimization Tool (With Refined PPV)")
@@ -71,6 +76,7 @@ else:
     ppv_purchases = calculate_ppv_purchases(event_rating, recommended_ad_spending)
     ppv_revenue = calculate_ppv_revenue(ppv_purchases, ppv_length_hours)
 
+# Total Revenue
 total_revenue = ticket_revenue + merchandising_revenue + food_drink_revenue + ppv_revenue
 profit = total_revenue - (recommended_ad_spending + recommended_prod_spending)
 
