@@ -1,5 +1,6 @@
 import streamlit as st
 import numpy as np
+import pandas as pd
 
 # Corrected Ticket Sales Model
 def calculate_tickets_sold(event_rating, production_spending, arena_size):
@@ -43,8 +44,12 @@ def calculate_ppv_revenue(ppv_purchases):
     """Calculate gross PPV revenue."""
     return ppv_purchases * 35  # $35 per PPV purchase
 
+def calculate_ppv_profit(ppv_revenue):
+    """Calculate the profit contribution from PPV revenue (50% only)."""
+    return ppv_revenue * 0.5  # Only 50% contributes to profits
+
 # Streamlit app
-st.title("Event Spending Optimization Tool (With Revenue and Cost Breakdown)")
+st.title("Event Spending Optimization Tool (With Adjusted PPV Profit)")
 
 # Inputs
 st.header("Input Event Details")
@@ -69,14 +74,16 @@ food_drink_revenue = calculate_food_drink_revenue(tickets_sold)
 if ppv_length_hours == 0:
     ppv_purchases = 0
     ppv_revenue = 0
+    ppv_profit = 0
 else:
     ppv_purchases = calculate_ppv_purchases(event_rating, recommended_ad_spending, ppv_length_hours)
     ppv_revenue = calculate_ppv_revenue(ppv_purchases)
+    ppv_profit = calculate_ppv_profit(ppv_revenue)
 
 # Total Revenue and Costs
 total_revenue = ticket_revenue + merchandising_revenue + food_drink_revenue + ppv_revenue
 total_costs = recommended_ad_spending + recommended_prod_spending + commentators_cost + cameras_cost
-profit = total_revenue - total_costs
+profit = (ticket_revenue + merchandising_revenue + food_drink_revenue + ppv_profit) - total_costs
 
 # Outputs
 st.header("Revenue Breakdown")
@@ -86,6 +93,7 @@ st.write(f"**Merchandising Revenue:** ${merchandising_revenue:,.2f}")
 st.write(f"**Food & Drink Revenue:** ${food_drink_revenue:,.2f}")
 st.write(f"**PPV Purchases:** {ppv_purchases:,.0f}")
 st.write(f"**PPV Revenue (Gross):** ${ppv_revenue:,.2f}")
+st.write(f"**PPV Profit Contribution:** ${ppv_profit:,.2f}")
 st.write(f"**Total Revenue:** ${total_revenue:,.2f}")
 
 st.header("Cost Breakdown")
@@ -98,9 +106,20 @@ st.write(f"**Total Costs:** ${total_costs:,.2f}")
 st.header("Profit Calculation")
 st.write(f"**Profit:** ${profit:,.2f}")
 
+# Create DataFrames for Visualization
+revenue_data = pd.DataFrame({
+    "Category": ["Tickets", "Merchandising", "Food & Drink", "PPV"],
+    "Amount": [ticket_revenue, merchandising_revenue, food_drink_revenue, ppv_profit]
+})
+
+cost_data = pd.DataFrame({
+    "Category": ["Ad Spending", "Production Spending", "Commentators", "Cameras"],
+    "Amount": [recommended_ad_spending, recommended_prod_spending, commentators_cost, cameras_cost]
+})
+
 # Visualization
-st.header("Revenue and Cost Breakdown")
-st.bar_chart({
-    "Revenue Components": [ticket_revenue, merchandising_revenue, food_drink_revenue, ppv_revenue],
-    "Cost Components": [recommended_ad_spending, recommended_prod_spending, commentators_cost, cameras_cost]
-}, x=["Tickets", "Merch", "Food & Drink", "PPV", "Ad Spending", "Production Spending", "Commentators", "Cameras"])
+st.header("Revenue Breakdown Chart")
+st.bar_chart(revenue_data.set_index("Category"))
+
+st.header("Cost Breakdown Chart")
+st.bar_chart(cost_data.set_index("Category"))
