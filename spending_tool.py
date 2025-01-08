@@ -30,26 +30,22 @@ def calculate_food_drink_revenue(tickets_sold, average_food_spending=20):
     return tickets_sold * average_food_spending
 
 def calculate_ppv_purchases(event_rating, ad_spending, ppv_length_hours):
-    """Refined PPV purchases model with scaling for event length."""
+    """Refined PPV purchases model with diminishing returns for length."""
     intercept = 157501.78
     coef_event_rating = 1420.70
     coef_ad_spending = -0.90
-    # Introduce a multiplier for PPV length
-    length_multiplier = 1 + (0.1 * ppv_length_hours)  # Adds 10% per hour of PPV
+    # Non-linear scaling for length (diminishing returns)
+    length_multiplier = 1 + (0.2 * ppv_length_hours) - (0.05 * ppv_length_hours**2)
     base_purchases = max(0, coef_event_rating * event_rating + coef_ad_spending * ad_spending + intercept)
-    return base_purchases * length_multiplier
+    return base_purchases * max(0, length_multiplier)  # Ensure multiplier is non-negative
 
 def calculate_ppv_revenue(ppv_purchases, ppv_length_hours):
     """Calculate PPV revenue after costs."""
-    # Gross revenue is based on purchases and PPV price
-    gross_ppv_revenue = ppv_purchases * 35
-    # Deduct network fees (50% of gross revenue)
-    network_fee = gross_ppv_revenue * 0.5
-    # Deduct fixed costs (based on length of PPV)
-    fixed_costs = ppv_length_hours * 300_000
-    # Calculate net PPV revenue
+    gross_ppv_revenue = ppv_purchases * 35  # PPV price
+    network_fee = gross_ppv_revenue * 0.5  # 50% network cut
+    fixed_costs = ppv_length_hours * 300_000  # Fixed hourly costs
     net_ppv_revenue = gross_ppv_revenue - network_fee - fixed_costs
-    return max(0, net_ppv_revenue)  # Ensure non-negative revenue
+    return max(0, net_ppv_revenue)  # Ensure revenue is non-negative
 
 # Streamlit app
 st.title("Event Spending Optimization Tool (With Refined PPV)")
