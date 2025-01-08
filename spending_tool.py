@@ -59,11 +59,15 @@ recommended_ad_spending = calculate_ad_spending(event_rating)
 recommended_prod_spending = calculate_production_spending(4.37, arena_size)
 
 tickets_sold = calculate_tickets_sold(event_rating, recommended_prod_spending, arena_size)
+ticket_revenue = tickets_sold * 75  # Assume $75 average ticket price
 merchandising_revenue = calculate_merchandising_revenue(tickets_sold)
 food_drink_revenue = calculate_food_drink_revenue(tickets_sold)
 
 ppv_purchases = calculate_ppv_purchases(event_rating, recommended_ad_spending)
 ppv_revenue = calculate_ppv_revenue(ppv_purchases, ppv_length_hours)
+
+total_revenue = ticket_revenue + merchandising_revenue + food_drink_revenue + ppv_revenue
+profit = total_revenue - (recommended_ad_spending + recommended_prod_spending)
 
 # Outputs
 st.header("Recommended Spending")
