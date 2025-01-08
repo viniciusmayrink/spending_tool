@@ -29,12 +29,15 @@ def calculate_food_drink_revenue(tickets_sold, average_food_spending=20):
     """Estimate food & drink revenue."""
     return tickets_sold * average_food_spending
 
-def calculate_ppv_purchases(event_rating, ad_spending):
-    """Refined PPV purchases model."""
+def calculate_ppv_purchases(event_rating, ad_spending, ppv_length_hours):
+    """Refined PPV purchases model with scaling for event length."""
     intercept = 157501.78
     coef_event_rating = 1420.70
     coef_ad_spending = -0.90
-    return max(0, coef_event_rating * event_rating + coef_ad_spending * ad_spending + intercept)
+    # Introduce a multiplier for PPV length
+    length_multiplier = 1 + (0.1 * ppv_length_hours)  # Adds 10% per hour of PPV
+    base_purchases = max(0, coef_event_rating * event_rating + coef_ad_spending * ad_spending + intercept)
+    return base_purchases * length_multiplier
 
 def calculate_ppv_revenue(ppv_purchases, ppv_length_hours):
     """Calculate PPV revenue after costs."""
@@ -73,7 +76,7 @@ if ppv_length_hours == 0:
     ppv_purchases = 0
     ppv_revenue = 0
 else:
-    ppv_purchases = calculate_ppv_purchases(event_rating, recommended_ad_spending)
+    ppv_purchases = calculate_ppv_purchases(event_rating, recommended_ad_spending, ppv_length_hours)
     ppv_revenue = calculate_ppv_revenue(ppv_purchases, ppv_length_hours)
 
 # Total Revenue
